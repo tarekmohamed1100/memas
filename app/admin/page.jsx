@@ -138,49 +138,23 @@ export default function AdminPage() {
     setPhotos([]); setComments([]); setTrash({ photos: [], comments: [] }); setUsers([]); setActivity([]);
   }
 
-  // تصغير الصورة في المتصفح قبل الرفع: بتقلل الحجم وبتشيل بيانات الموقع الجغرافي
-  async function shrink(file) {
-    try {
-      const bmp = await createImageBitmap(file);
-      const scale = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
-      const c = document.createElement('canvas');
-      c.width = Math.round(bmp.width * scale);
-      c.height = Math.round(bmp.height * scale);
-      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-      const blob = await new Promise((res) => c.toBlob(res, 'image/webp', 0.82));
-      if (!blob) return file;
-      return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' });
-    } catch {
-      return file;
-    }
-  }
-
-  // بنرفع صورة صورة، عشان كل طلب يفضل صغير ويتجنب حد الطلب على Vercel
   async function upload() {
-    const files = [...(fileRef.current?.files || [])];
-    if (!files.length) return say(ERR.no_files, true);
+    const files = fileRef.current?.files;
+    if (!files?.length) return say(ERR.no_files, true);
+    const fd = new FormData();
+    [...files].forEach((f) => fd.append('photos', f));
+    fd.append('category', category);
     setBusy(true);
-    let added = 0;
-    const failed = [];
-    for (let i = 0; i < files.length; i++) {
-      say(`جارٍ تجهيز ورفع الصورة ${i + 1} من ${files.length}…`);
-      try {
-        const prepared = await shrink(files[i]);
-        const fd = new FormData();
-        fd.append('photos', prepared);
-        fd.append('category', category);
-        const r = await api('/api/admin/photos', { method: 'POST', body: fd });
-        added += r.added;
-        failed.push(...r.failed);
-      } catch (err) {
-        if (err.status === 401) { fail(err); break; }
-        failed.push({ name: files[i].name });
-      }
-    }
-    if (fileRef.current) fileRef.current.value = '';
-    await refresh(isOwner).catch(() => {});
-    say(`تم رفع ${added} صورة${failed.length ? `، وتعذّر رفع ${failed.length} (${failed.map((f) => f.name).join('، ')})` : ''}.`, failed.length > 0);
-    setBusy(false);
+    say(`جارٍ رفع ${files.length} صورة…`);
+    try {
+      const r = await api('/api/admin/photos', { method: 'POST', body: fd });
+      fileRef.current.value = '';
+      await refresh(isOwner);
+      say(`تم رفع ${r.added} صورة${r.failed.length ? `، وتعذّر رفع ${r.failed.length} (${r.failed.map((f) => f.name).join('، ')})` : ''}.`, r.failed.length > 0);
+    } catch (err) {
+      if (err.status === 422) say('الملفات دي مش صور صالحة.', true);
+      else fail(err);
+    } finally { setBusy(false); }
   }
 
   const move = (i, d) => {
