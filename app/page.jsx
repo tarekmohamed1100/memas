@@ -4,6 +4,7 @@ import SiteFooter from '@/components/SiteFooter';
 import { photos, comments } from '@/lib/store';
 import { config } from '@/lib/config';
 import { listCategories } from '@/lib/categories';
+import { photoSrc } from '@/lib/files';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,7 @@ export default async function Home() {
   // الترقيم بيتحسب على الصور الظاهرة، زي ما الزائر شايفها
   const items = list
     .filter((p) => !p.deletedAt)
-    .map((p, i) => ({ id: p.id, file: p.file, w: p.w, h: p.h, category: p.category || '', n: i + 1 }));
+    .map((p, i) => ({ id: p.id, src: photoSrc(p), w: p.w, h: p.h, category: p.category || '', n: i + 1 }));
   const approved = all
     .filter((c) => c.approved && !c.deletedAt)
     .slice(0, 100)

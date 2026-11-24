@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request) {
   if (!configOk()) return NextResponse.json({ error: 'server_misconfigured' }, { status: 500 });
   const key = `login:${clientIp(request)}`;
-  if (overLimit(key, 5, 15 * 60 * 1000)) return NextResponse.json({ error: 'too_many_attempts' }, { status: 429 });
+  if (await overLimit(key, 5, 15 * 60 * 1000)) return NextResponse.json({ error: 'too_many_attempts' }, { status: 429 });
 
   let body;
   try { body = await request.json(); } catch { return NextResponse.json({ error: 'bad_request' }, { status: 400 }); }
@@ -32,7 +32,7 @@ export async function POST(request) {
     log('warn', 'login_failed');
     return NextResponse.json({ error: 'bad_credentials' }, { status: 401 });
   }
-  clearLimit(key);
+  await clearLimit(key);
   await audit(user, 'login');
   const res = NextResponse.json({ ok: true, user });
   res.cookies.set(COOKIE_NAME, makeToken(user.id), cookieOpts);

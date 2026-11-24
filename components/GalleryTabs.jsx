@@ -27,7 +27,7 @@ export default function GalleryTabs({ items, categories }) {
       </div>
       <div className="columns-2 gap-3.5 sm:columns-3">
         {shown.map((p, i) => {
-          const src = `/uploads/${p.file}`;
+          const src = p.src;
           return (
             <div key={p.id} className="anim-fade-up relative mb-3.5 break-inside-avoid" style={{ '--d': `${Math.min(i, 12) * 70}ms` }}>
               <a

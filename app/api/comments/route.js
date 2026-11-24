@@ -27,7 +27,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'invalid' }, { status: 400 });
   if (/https?:\/\/|www\./i.test(`${name} ${text}`))
     return NextResponse.json({ error: 'no_links' }, { status: 400 });
-  if (overLimit(`comment:${clientIp(request)}`, 3, 10 * 60 * 1000))
+  if (await overLimit(`comment:${clientIp(request)}`, 3, 10 * 60 * 1000))
     return NextResponse.json({ error: 'too_many' }, { status: 429 });
   if ((await comments.read()).filter((c) => !c.approved && !c.deletedAt).length >= 200)
     return NextResponse.json({ error: 'busy' }, { status: 503 });
